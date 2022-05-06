@@ -1,0 +1,50 @@
+{
+"classes":[
+{
+	"class":0,
+	"name":"0",
+	"type":"console",
+	"id":"",
+	"option":"full",
+	"text":"Unit $name\n is falen"
+},
+{
+	"class":1,
+	"type":"console",
+	"id":"",
+	"option":"id",
+	"text":"$id was falen"
+},
+{
+	"class":2,
+	"type":"console",
+	"id":"",
+	"option":"id",
+	"text":""
+},
+{
+	"class":4,
+	"type":"console",
+	"id":"",
+	"option":"full",
+	"text":"error $curerr: \n$txterr"
+}
+],
+"conditions":
+[
+{
+	"condition":"1 > 0",
+	"type":"console",
+	"option":"full",
+	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
+},
+{
+	"condition":"$numerr[4] > 0",
+	"type":"console",
+	"option":"lasterr",
+	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
+}
+
+]
+}
+
