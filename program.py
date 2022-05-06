@@ -13,6 +13,8 @@ import re
 import time
 import argparse
 import json
+import requests 
+import shutil
 '''
 TODO
 добавить комментарии
@@ -31,7 +33,8 @@ def main():
     global DEBUG
     DEBUG=1
     parser = argparse.ArgumentParser(description='Прототип системы анализа и классификации журналов при сборках')
-    parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора вручную")
+    parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора")
+    parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
     parser.add_argument("--debug",default=0, nargs='?', const=1, help="Включает режим DEBUG")
     args = parser.parse_args()
     if not DEBUG: DEBUG=int(args.debug)
@@ -49,7 +52,7 @@ def main():
     test=c1.JSONload("classifier.json")
     # printd2("conditions json:",test["conditions"])
     if(isinstance(args.file, str)):
-        srch1=SearchEngine(confRE,confCl,args.file)
+        srch1=SearchEngine(confRE,confCl,args.file,args.fileurl)
     else:
         print("ERROR: --file должен содержать строку")
         exit()
@@ -68,7 +71,7 @@ class ErrorСauseChecker:
     def __init__(self,confRE,confCl,strlist,file=""):
         self.confRE,self.confCl=confRE,confCl
         self.inp1=InputManager()
-        self.logfile=self.inp1.getLogfile(file)
+        self.logfile=self.inp1.getLogfile(file,fileurl)
 
         
 class NotifySender:
@@ -81,10 +84,16 @@ class NotifySender:
         self.cond=cond
         
     def lasterr(self):
-        return self.strlist[-1]
+        try:
+            return self.strlist[-1]
+        except Exception:
+            return {"string":"<No errors>","class":-1,"match":"<No errors>"}
         
     def firsterr(self):
-        return self.strlist[0]
+        try:
+            return self.strlist[0]
+        except Exception:
+            return {"string":"<No errors>","class":-1,"match":"<No errors>"}
         
     def cntErrClass(self,num):
         return [int(self.strlist[i]["class"]) for i in range(len(self.strlist))].count(int(num))
@@ -160,10 +169,12 @@ class NotifySender:
 
 class SearchEngine:
     """Класс предназначен для поиска по ключевым словам в файле журнала"""
-    def __init__(self,confRE,confCl,file=""):
+    def __init__(self,confRE,confCl,file="",fileurl=""):
         self.confRE,self.confCl=confRE,confCl
         self.inp1=InputManager()
-        self.logfile=self.inp1.getLogfile(file)
+        self.logfile=self.inp1.getLogfile(file,fileurl)
+        if self.logfile == "":
+            exit("Error: file not found")
         
     def startFind(self):
         start_time = time.time()
@@ -204,12 +215,21 @@ class InputManager:
     def closeFile(self):
         self.file1.close
         
-    def getLogfile(self,file=""):
+    def download_file(self,url): 
+        local_filename = url.split('/')[-1] 
+        with requests.get(url, stream=True) as r: 
+            with open(local_filename, 'wb') as f: 
+                shutil.copyfileobj(r.raw, f) 
+        return local_filename
+    def getLogfile(self,file="",fileurl=""):
+        if fileurl != "":
+            return self.download_file(fileurl)
         if file != "":
             return file
         #file = os.environ["userprofile"]+r"\Downloads\_log.txt"
         file = r"./_log.txt"
-        return file
+        return ""
+        #return file
         
     def nextLine(self):
         flagEOF=0
@@ -308,7 +328,7 @@ class InputManager:
                 break
             try:
                 configArr2.append([[int(result1[0]),result1[1],result1[2],result1[3]],line2])
-            except IndexError:
+            except Exception:
                 print("\nUnable to parse around:\n",line)
                 return 0,0,0
         # printd(configArr2)
