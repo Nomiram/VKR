@@ -5,7 +5,7 @@
 # Created      : 22.11.2021 
 # Last Modified: 28.11.2021 
 # Description  : This program parse logfile from obs and send notifications to developers
-# Requirements : regex.config, classifier.config in directory of program
+# Requirements : regex.json, classifier.json in directory of program
 # Requirements : 
 import io
 import os
@@ -15,6 +15,8 @@ import argparse
 import json
 import requests 
 import shutil
+from jira import JIRA
+
 '''
 TODO
 добавить комментарии
@@ -117,6 +119,7 @@ class NotifySender:
             # mainstr=re.sub(r"\$Class\[-*{0}]".format(int(i)), str([int(self.cond[i][0]) for i in range(len(self.strlist))].count(int(num))), mainstr)  
         
         return mainstr
+    
     def logPrintSet(self,i,cond):
         # print(cond[i][1][-1])
         if(cond[i]["option"]=="full"):
@@ -130,6 +133,27 @@ class NotifySender:
             print(mainstr)
         if(cond[i]["option"]=="none"):
             print("\n")
+        #Send message to Jira
+        if(cond[i]['type'].lower() == "jira"):
+            
+            login="qwerty.mironenko@gmail.com"
+            api_key="EGz9ScrBGMCSpqBLILgY7549"
+            jira_options = {'server': 'https://nomiram.atlassian.net'}
+            jira = JIRA(options=jira_options, basic_auth=(login, api_key))
+            issue_key="JPAT-1"
+            issue = jira.issue(issue_key)
+            print(issue)
+            project_key = "JPAT"
+            jql = 'project = ' + project_key
+            issues_list = jira.search_issues(jql)
+            print(issues_list)
+            issue_dict = {
+                'project': project_key,
+                'summary': 'New issue from program.py',
+                'description': mainstr,
+                'issuetype': {'name': 'Task'},
+            }
+            new_issue = jira.create_issue(fields=issue_dict)
         
     def checkConditions(self,cond):
         for i in range(len(cond)):
@@ -185,11 +209,9 @@ class SearchEngine:
             if fl:
                 break
             for regex in self.confRE:
-                # if 1:
                 if regex["keystr"] in line:
                     printd2("\nfline:",re.findall(r"^\[ *\d*s] (.*)",line)[0])
                     for j in range(0,len(regex["regexlist"])):
-                        # print("asasda",len(regex["regexlist"]))
                         str1=re.findall(r"^\[ *\d*s] (.*)",line)[0].rstrip("\n") # строка без начального " [****] " и конечного "\n"
                         match=re.findall(regex["regexlist"][j]["regex"],str1)
                         if match:
@@ -197,6 +219,7 @@ class SearchEngine:
                             printd2("regex:", regex["regexlist"][j]["regex"])
                             printd2("match:", match)
                             result.append({"string":str1,"class":regex["regexlist"][j]["class"],"match":match})
+                            
                             break
         printd("\nПоиск завершен за",time.time() - start_time, "секунд"," \nКоличество строк в файле:",self.inp1.strnum)
         return result
@@ -248,7 +271,7 @@ class InputManager:
     def getPos(self):
         return file1.tell()
     
-    def getPos(self):
+    def setPos(self):
         file1.seek(pos)
     def JSONload(self,filename):
         with open(filename, "r") as read_file:
