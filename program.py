@@ -5,7 +5,7 @@
 # Created      : 22.11.2021 
 # Last Modified: 28.11.2021 
 # Description  : This program parse logfile from obs and send notifications to developers
-# Requirements : regex.config, classifier.config in directory of program
+# Requirements : regex.json, classifier.json in directory of program
 # Requirements : 
 import io
 import os
@@ -13,6 +13,10 @@ import re
 import time
 import argparse
 import json
+import requests 
+import shutil
+from jira import JIRA
+
 '''
 TODO
 добавить комментарии
@@ -31,7 +35,8 @@ def main():
     global DEBUG
     DEBUG=1
     parser = argparse.ArgumentParser(description='Прототип системы анализа и классификации журналов при сборках')
-    parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора вручную")
+    parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора")
+    parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
     parser.add_argument("--debug",default=0, nargs='?', const=1, help="Включает режим DEBUG")
     args = parser.parse_args()
     if not DEBUG: DEBUG=int(args.debug)
@@ -49,7 +54,7 @@ def main():
     test=c1.JSONload("classifier.json")
     # printd2("conditions json:",test["conditions"])
     if(isinstance(args.file, str)):
-        srch1=SearchEngine(confRE,confCl,args.file)
+        srch1=SearchEngine(confRE,confCl,args.file,args.fileurl)
     else:
         print("ERROR: --file должен содержать строку")
         exit()
@@ -68,7 +73,7 @@ class ErrorСauseChecker:
     def __init__(self,confRE,confCl,strlist,file=""):
         self.confRE,self.confCl=confRE,confCl
         self.inp1=InputManager()
-        self.logfile=self.inp1.getLogfile(file)
+        self.logfile=self.inp1.getLogfile(file,fileurl)
 
         
 class NotifySender:
@@ -81,10 +86,16 @@ class NotifySender:
         self.cond=cond
         
     def lasterr(self):
-        return self.strlist[-1]
+        try:
+            return self.strlist[-1]
+        except Exception:
+            return {"string":"<No errors>","class":-1,"match":"<No errors>"}
         
     def firsterr(self):
-        return self.strlist[0]
+        try:
+            return self.strlist[0]
+        except Exception:
+            return {"string":"<No errors>","class":-1,"match":"<No errors>"}
         
     def cntErrClass(self,num):
         return [int(self.strlist[i]["class"]) for i in range(len(self.strlist))].count(int(num))
@@ -108,6 +119,7 @@ class NotifySender:
             # mainstr=re.sub(r"\$Class\[-*{0}]".format(int(i)), str([int(self.cond[i][0]) for i in range(len(self.strlist))].count(int(num))), mainstr)  
         
         return mainstr
+    
     def logPrintSet(self,i,cond):
         # print(cond[i][1][-1])
         if(cond[i]["option"]=="full"):
@@ -121,6 +133,27 @@ class NotifySender:
             print(mainstr)
         if(cond[i]["option"]=="none"):
             print("\n")
+        #Send message to Jira
+        if(cond[i]['type'].lower() == "jira"):
+            
+            login="qwerty.mironenko@gmail.com"
+            api_key="EGz9ScrBGMCSpqBLILgY7549"
+            jira_options = {'server': 'https://nomiram.atlassian.net'}
+            jira = JIRA(options=jira_options, basic_auth=(login, api_key))
+            issue_key="JPAT-1"
+            issue = jira.issue(issue_key)
+            print(issue)
+            project_key = "JPAT"
+            jql = 'project = ' + project_key
+            issues_list = jira.search_issues(jql)
+            print(issues_list)
+            issue_dict = {
+                'project': project_key,
+                'summary': 'New issue from program.py',
+                'description': mainstr,
+                'issuetype': {'name': 'Task'},
+            }
+            new_issue = jira.create_issue(fields=issue_dict)
         
     def checkConditions(self,cond):
         for i in range(len(cond)):
@@ -160,10 +193,12 @@ class NotifySender:
 
 class SearchEngine:
     """Класс предназначен для поиска по ключевым словам в файле журнала"""
-    def __init__(self,confRE,confCl,file=""):
+    def __init__(self,confRE,confCl,file="",fileurl=""):
         self.confRE,self.confCl=confRE,confCl
         self.inp1=InputManager()
-        self.logfile=self.inp1.getLogfile(file)
+        self.logfile=self.inp1.getLogfile(file,fileurl)
+        if self.logfile == "":
+            exit("Error: file not found")
         
     def startFind(self):
         start_time = time.time()
@@ -174,11 +209,9 @@ class SearchEngine:
             if fl:
                 break
             for regex in self.confRE:
-                # if 1:
                 if regex["keystr"] in line:
                     printd2("\nfline:",re.findall(r"^\[ *\d*s] (.*)",line)[0])
                     for j in range(0,len(regex["regexlist"])):
-                        # print("asasda",len(regex["regexlist"]))
                         str1=re.findall(r"^\[ *\d*s] (.*)",line)[0].rstrip("\n") # строка без начального " [****] " и конечного "\n"
                         match=re.findall(regex["regexlist"][j]["regex"],str1)
                         if match:
@@ -186,6 +219,7 @@ class SearchEngine:
                             printd2("regex:", regex["regexlist"][j]["regex"])
                             printd2("match:", match)
                             result.append({"string":str1,"class":regex["regexlist"][j]["class"],"match":match})
+                            
                             break
         printd("\nПоиск завершен за",time.time() - start_time, "секунд"," \nКоличество строк в файле:",self.inp1.strnum)
         return result
@@ -204,12 +238,21 @@ class InputManager:
     def closeFile(self):
         self.file1.close
         
-    def getLogfile(self,file=""):
+    def download_file(self,url): 
+        local_filename = url.split('/')[-1] 
+        with requests.get(url, stream=True) as r: 
+            with open(local_filename, 'wb') as f: 
+                shutil.copyfileobj(r.raw, f) 
+        return local_filename
+    def getLogfile(self,file="",fileurl=""):
+        if fileurl != "":
+            return self.download_file(fileurl)
         if file != "":
             return file
         #file = os.environ["userprofile"]+r"\Downloads\_log.txt"
         file = r"./_log.txt"
-        return file
+        return ""
+        #return file
         
     def nextLine(self):
         flagEOF=0
@@ -228,7 +271,7 @@ class InputManager:
     def getPos(self):
         return file1.tell()
     
-    def getPos(self):
+    def setPos(self):
         file1.seek(pos)
     def JSONload(self,filename):
         with open(filename, "r") as read_file:
@@ -308,7 +351,7 @@ class InputManager:
                 break
             try:
                 configArr2.append([[int(result1[0]),result1[1],result1[2],result1[3]],line2])
-            except IndexError:
+            except Exception:
                 print("\nUnable to parse around:\n",line)
                 return 0,0,0
         # printd(configArr2)

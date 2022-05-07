@@ -10,8 +10,9 @@
 },
 {
 	"class":1,
-	"type":"console",
+	"type":"jira",
 	"id":"",
+	"login":"qwerty.mironenko@gmail.com",
 	"option":"id",
 	"text":"$id was falen"
 },
@@ -34,8 +35,10 @@
 [
 {
 	"condition":"1 > 0",
-	"type":"console",
+	"type":"jira",
 	"option":"full",
+	"login":"qwerty.mironenko@gmail.com",
+	"api_key":"EGz9ScrBGMCSpqBLILgY7549",
 	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
 },
 {
@@ -43,8 +46,13 @@
 	"type":"console",
 	"option":"lasterr",
 	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
+},
+{
+	"condition":"$numerr[5] > 0",
+	"type":"Jira",
+	"option":"lasterr",
+	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
 }
-
 ]
 }
 
