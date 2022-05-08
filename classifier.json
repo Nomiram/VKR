@@ -37,6 +37,8 @@
 	"condition":"1 > 0",
 	"type":"jira",
 	"option":"full",
+	"login":"qwerty.mironenko@gmail.com",
+	"api_key":"EGz9ScrBGMCSpqBLILgY7549",
 	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
 },
 {
