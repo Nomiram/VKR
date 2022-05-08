@@ -5,6 +5,7 @@ from subprocess import Popen
 from subprocess import PIPE
 from datetime import datetime
 import json
+import re
 #magic constants (TODO put it into startup.config)
 amqp_namespace = "opensuse.obs";
 program_name="./program.py"
@@ -38,7 +39,9 @@ def callback(ch, method, properties, body):
         bodyargs=json.loads(body)
         #bodyargs=body
         #print(bodyargs)
-        pipe1=Popen(["python3", program_name, "--fileurl", "http://localhost:3000/public/build/"+bodyargs['project']+"/"+bodyargs['repository']+"/"+bodyargs['arch']+"/"+bodyargs['package']+"/_log"], stdout=PIPE)
+        filename=bodyargs['project']+"."+bodyargs['repository']+"."+bodyargs['arch']+"."+bodyargs['package'],".json"
+        json.dump(body,filename)
+        pipe1=Popen(["python3", program_name, "--fileurl", "http://localhost:3000/public/build/"+bodyargs['project']+"/"+bodyargs['repository']+"/"+bodyargs['arch']+"/"+bodyargs['package']+"/_log"],"--pargs",filename, stdout=PIPE)
         #pipe1=Popen(["python3", program_name, "--file", "./_log.txt"], stdout=PIPE)
         print("subprocess answer\n",(pipe1.stdout.read()).decode("utf-8"))
     

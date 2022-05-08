@@ -15,6 +15,7 @@ import argparse
 import json
 import requests 
 import traceback 
+import traceback 
 import shutil
 from jira import JIRA
 
@@ -44,6 +45,7 @@ def main():
     parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
     parser.add_argument("--pargs",default="", help="Путь к файлу с дополнительными аргументами")
     parser.add_argument("--debug",default=0, nargs='?', const=1, help="Включает режим DEBUG")
+    parser.add_argument("--pargs",default=0, nargs='?', const=1, help="Включает режим DEBUG")
     args = parser.parse_args()
     if not DEBUG: DEBUG=int(args.debug)
     c1=InputManager()
@@ -71,6 +73,7 @@ def main():
     print("Проверка условий")
     print("Отправка ообщений")
     notif1.checkConditions(cond)
+    
     # print(notif1.lasterr())
 
 # Заглушка для класса
@@ -120,11 +123,11 @@ class NotifySender:
         res=re.findall(r"\$numerr\[(-*\d)]",mainstr)
         for i in res:
             mainstr=re.sub(r"\$numerr\[-*{0}]".format(int(i)), str(self.cntErrClass(i)), mainstr)  
-        
+
         res=re.findall(r"\$nextnstr\[(-*\d)]",mainstr)
         for i in res:
             mainstr=re.sub(r"\$nextnstr\[-*{0}]".format(int(i)), str([str1["nstrings"][j] for j in range(int(i))]), mainstr)  
-        
+
         return mainstr
     
     def logPrintSet(self,i,cond,mainstr):
@@ -154,7 +157,6 @@ class NotifySender:
             issue = jira.issue(issue_key)
             print(issue)
             project_key = "JPAT"
-            
             jql = 'project = ' + project_key
             issues_list = jira.search_issues(jql)
             print(issues_list)
@@ -340,6 +342,5 @@ class InputManager:
                 # print(data)
                 if configArr2:
                     return configArr1,configArr2["classes"],configArr2["conditions"]
-
 if __name__ == "__main__":
     main()
