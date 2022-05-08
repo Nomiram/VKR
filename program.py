@@ -70,9 +70,11 @@ def main():
     result=srch1.startFind()
     # print(*result)
     notif1=NotifySender(confRE,confCl,cond,result)
-    print("Проверка условий")
-    print("Отправка cобщений")
+    print("Проверка условий,")
+    print("Отправка cобщений........",end="")
     notif1.checkConditions(cond)
+    print("Успешно")
+    print("Программа ", __file__," завершена")
     
 
 # Заглушка для класса
@@ -108,6 +110,7 @@ class NotifySender:
     def cntErrClass(self,num):
         return [int(self.strlist[i]["class"]) for i in range(len(self.strlist))].count(int(num))
         
+        
     def replaceKeywords(self,mainstr,str1={"string":"","class":"","nstrings":"","nrstrings":""},type=1):
         mainstr=mainstr.replace("$lasterr",str(self.lasterr()["string"]))
         mainstr=mainstr.replace("$firsterr",str(self.firsterr()["string"]))
@@ -125,7 +128,7 @@ class NotifySender:
 
         res=re.findall(r"\$nextnstr\[(-*\d)]",mainstr)
         for i in res:
-            mainstr=re.sub(r"\$nextnstr\[-*{0}]".format(int(i)), str([str1["nstrings"][j] for j in range(int(i))]), mainstr)  
+            mainstr=re.sub(r"\$nextnstr\[-*{0}]".format(int(i)),"".join([(str1["nstrings"][j]) for j in range(int(i))]), mainstr)  
 
         return mainstr
     
@@ -145,8 +148,9 @@ class NotifySender:
         #Send message to Jira
         if(cond[i]['type'].lower() == "jira"):
             
-            login="qwerty.mironenko@gmail.com"
-            api_key=InputManager.JSONload("jira_api_key.json")
+            
+            
+            login, api_key=InputManager.JSONload("jira_api_key.json")
             if api_key == 0:
                 print("unable to read file 'jira_api_key.json'")
                 exit()
@@ -154,11 +158,15 @@ class NotifySender:
             jira = JIRA(options=jira_options, basic_auth=(login, api_key))
             issue_key="JPAT-1"
             issue = jira.issue(issue_key)
-            print(issue)
-            project_key = "JPAT"
+            #print(issue)
+            try:
+                project_key = cond[i]['project_key']
+            except Exception:
+                print("error: project_key not found ")
+                return
             jql = 'project = ' + project_key
             issues_list = jira.search_issues(jql)
-            print(issues_list)
+            #print(issues_list)
             issue_dict = {
                 'project': project_key,
                 'summary': 'New issue from program.py',
@@ -202,8 +210,8 @@ class NotifySender:
             stringlist=[stringlist]
         for str1 in stringlist:
             for config in self.confCl:
-                if str1["class"] == config["class"] and config["type"] == 'console' and id=='':
-                    if(config["text"] == ""):
+                if str1["class"] == config["class"]:
+                    if ("text" in config) and config["text"]!="":
                         mainstr+=self.replaceKeywords(config["text"],str1)+"\n";
                     else:
                         mainstr+=self.replaceKeywords("\n$txterr",str1)+"\n";
@@ -255,6 +263,7 @@ class SearchEngine:
                                     nstrings.append(line)
                             self.inp1.setPos(position)
                             
+                            #result.append({"string":str1,"class":regex["regexlist"][j]["class"],"class_options":regex["regexlist"][j],"match":match,"nrstrings":nrstrings,"nstrings":nstrings})
                             result.append({"string":str1,"class":regex["regexlist"][j]["class"],"match":match,"nrstrings":nrstrings,"nstrings":nstrings})
                             break
         printd("\nПоиск завершен за",time.time() - start_time, "секунд"," \nКоличество строк в файле:",self.inp1.strnum)

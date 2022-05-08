@@ -6,7 +6,7 @@
 	"type":"console",
 	"id":"",
 	"option":"full",
-	"text":"Unit $name\n is falen $nextnstr[3]"
+	"text":"Unit $name\n is falen\n $nextnstr[3]"
 },
 {
 	"class":1,
@@ -28,29 +28,30 @@
 	"type":"console",
 	"id":"",
 	"option":"full",
-	"text":"error $curerr: \n$txterr"
+	"text":"error $curerr: \n$txterr \n$nextnstr[3]"
 }
 ],
 "conditions":
 [
 {
 	"condition":"True",
-	"type":"console",
+	"type":"Jira",
 	"option":"full",
 	"login":"qwerty.mironenko@gmail.com",
-	"pstring":"ERRORS: $numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0] $errtxt[-1]"
+	"project_key":"JPAT",
+	"pstring":"ERRORS: $numerr[0]: all $errcnt last error: \n$lasterr\n$errprm[1][0]\n$errtxt[-1]"
 },
 {
 	"condition":"$numerr[4] < 0",
 	"type":"console",
 	"option":"lasterr",
-	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
+	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n$errprm[1][0]"
 },
 {
 	"condition":"$numerr[5] < 0",
 	"type":"console",
 	"option":"lasterr",
-	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
+	"pstring":"$numerr[0]: all $errcnt last error:\n$lasterr\n$errprm[1][0]"
 }
 ]
 }

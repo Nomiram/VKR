@@ -29,10 +29,39 @@ for i in range(len(binding_keys)):
 
 print(datetime.now().strftime("%H:%M:%S"),' [*] Waiting for logs. To exit press CTRL+C')
 
-
+def JiraNotifySender(project_key,message):
+    login, api_key=json.load("jira_api_key.json")
+    if not api_key:
+        print("unable to read file 'jira_api_key.json'")
+        exit()
+    jira_options = {'server': 'https://nomiram.atlassian.net'}
+    jira = JIRA(options=jira_options, basic_auth=(login, api_key))
+    issue_key="JPAT-1"
+    issue = jira.issue(issue_key)
+    #print(issue)
+    try:
+        project_key 
+    except Exception:
+        print("error: project_key not found ")
+        return
+    jql = 'project = ' + project_key
+    issues_list = jira.search_issues(jql)
+    #print(issues_list)
+    issue_dict = {
+        'project': project_key,
+        'summary': 'New issue from program.py',
+        'description': message,
+        'issuetype': {'name': 'Task'},
+    }
+    new_issue = jira.create_issue(fields=issue_dict)
 def callback(ch, method, properties, body):
     #bodyargs=json.loads(body.decode("utf-8"))
     print(datetime.now().strftime("%H:%M:%S"),"[x] %r:%r" % (method.routing_key, body))
+    if method.routing_key == amqp_namespace+".metrics":
+        #print("starting subprocess...") 
+        
+        if ("worker" in str(body)) and ("state=down" in str(body)):
+            JiraNotifySender("DEV","worker is down\n metrics:"+body)
     if method.routing_key == amqp_namespace+".package.build_fail":
         print("starting subprocess...") 
         
