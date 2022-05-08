@@ -14,6 +14,7 @@ import time
 import argparse
 import json
 import requests 
+import traceback 
 import shutil
 from jira import JIRA
 
@@ -38,6 +39,7 @@ def main():
     parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора")
     parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
     parser.add_argument("--debug",default=0, nargs='?', const=1, help="Включает режим DEBUG")
+    parser.add_argument("--pargs",default=0, nargs='?', const=1, help="Включает режим DEBUG")
     args = parser.parse_args()
     if not DEBUG: DEBUG=int(args.debug)
     c1=InputManager()
@@ -51,7 +53,7 @@ def main():
     printd2("conditions:",cond)
     printd2("regex:",confRE)
     printd2("cl:",confCl)
-    test=c1.JSONload("classifier.json")
+    test=InputManager.JSONload("classifier.json")
     # printd2("conditions json:",test["conditions"])
     if(isinstance(args.file, str)):
         srch1=SearchEngine(confRE,confCl,args.file,args.fileurl)
@@ -65,6 +67,7 @@ def main():
     print("Проверка условий")
     print("Отправка ообщений")
     notif1.checkConditions(cond)
+    
     # print(notif1.lasterr())
 
 # Заглушка для класса
@@ -114,9 +117,9 @@ class NotifySender:
         res=re.findall(r"\$numerr\[(-*\d)]",mainstr)
         for i in res:
             mainstr=re.sub(r"\$numerr\[-*{0}]".format(int(i)), str(self.cntErrClass(i)), mainstr)  
-        # res=re.findall(r"\$Class\[(-*\d)]",mainstr)
-        # for i in res:
-            # mainstr=re.sub(r"\$Class\[-*{0}]".format(int(i)), str([int(self.cond[i][0]) for i in range(len(self.strlist))].count(int(num))), mainstr)  
+        res=re.findall(r"\$nextnstr\[(-*\d)]",mainstr)
+        for i in res:
+            mainstr=re.sub(r"\$nextnstr\[-*{0}]".format(int(i)), str([str1[] for i in range(len(self.strlist))]), mainstr)  
         
         return mainstr
     
@@ -137,13 +140,17 @@ class NotifySender:
         if(cond[i]['type'].lower() == "jira"):
             
             login="qwerty.mironenko@gmail.com"
-            api_key="EGz9ScrBGMCSpqBLILgY7549"
+            api_key=InputManager.JSONload("jira_api_key.json")
+            if api_key == 0:
+                print("unable to read file 'jira_api_key.json'")
+                exit()
             jira_options = {'server': 'https://nomiram.atlassian.net'}
             jira = JIRA(options=jira_options, basic_auth=(login, api_key))
             issue_key="JPAT-1"
             issue = jira.issue(issue_key)
             print(issue)
             project_key = "JPAT"
+            
             jql = 'project = ' + project_key
             issues_list = jira.search_issues(jql)
             print(issues_list)
@@ -273,11 +280,17 @@ class InputManager:
     
     def setPos(self):
         file1.seek(pos)
-    def JSONload(self,filename):
-        with open(filename, "r") as read_file:
-            data = json.load(read_file)
-            # print(data)
-        return data
+    @staticmethod
+    def JSONload(filename):
+        try:
+            with open(filename, "r") as read_file:
+                data = json.load(read_file)
+            return data
+        except Exception as err:
+            print(err)
+            return 0
+        # print(data)
+    
     def getConfigs(self):
         configArr1=list()
         currArr=-1
@@ -292,70 +305,6 @@ class InputManager:
                 # print(data)
                 if configArr2:
                     return configArr1,configArr2["classes"],configArr2["conditions"]
-        conf1=InputManager()
-        conf1.openFile("regex.config")
-        fl,line = conf1.nextLine()
-        if fl:
-            return 0
-        result = re.split(r' ', line)
-        delimiter=result[0]
-        comm=result[1]
-        if not delimiter:
-            exit()
-        while True:
-            fl,line=conf1.nextLine()
-            if fl:
-                break
-            if line[0]==comm:
-                continue
-            result = re.split(delimiter, line)
-            # print(result)
-            if re.match(r'\s', result[0]):
-                currArr=currArr+1
-                configArr1.append([])
-                configArr1[currArr].append(result[1])
-            else:
-                configArr1[currArr].append([result[1],int(result[2])])
-        
-
-        
-        conditional=list()
-        conf1.openFile("classifier.config")
-        configArr2=list()
-        conditional=list()
-        cnt=-1
-        while True:
-            fl,line=conf1.nextLine()
-            if fl:
-                break
-            if line[0]=="\n":
-                continue
-            while line[0:2]=="if":
-                cnt+=1
-                conditional.append([line[3:-2]])
-                fl,line=conf1.nextLine()
-                if fl:
-                    break
-                while line[0] == "\t":
-                    result1 = re.split('#', line[1:-1])
-                    conditional[cnt].append(result1)
-                    fl,line=conf1.nextLine()
-                    if fl:
-                        break
-                    # conditional[cnt].append(line)
-                    
-            
-            result1 = re.split('#', line)
-            fl,line2=conf1.nextLine()
-            if fl:
-                break
-            try:
-                configArr2.append([[int(result1[0]),result1[1],result1[2],result1[3]],line2])
-            except Exception:
-                print("\nUnable to parse around:\n",line)
-                return 0,0,0
-        # printd(configArr2)
-        return configArr1,configArr2,conditional
 
 if __name__ == "__main__":
     main()
