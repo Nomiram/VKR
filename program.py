@@ -18,6 +18,7 @@ import traceback
 import traceback 
 import shutil
 from jira import JIRA
+from datetime import datetime
 
 
 
@@ -45,15 +46,14 @@ def main():
     parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
     parser.add_argument("--pargs",default="", help="Путь к файлу с дополнительными аргументами")
     parser.add_argument("--debug",default=0, nargs='?', const=1, help="Включает режим DEBUG")
-    parser.add_argument("--pargs",default=0, nargs='?', const=1, help="Включает режим DEBUG")
     args = parser.parse_args()
     if not DEBUG: DEBUG=int(args.debug)
-    c1=InputManager()
-    
+    print(__file__," # ",datetime.now().strftime("%H:%M:%S"))
     print("Загрузка конфигурации....",end="")
+    c1=InputManager()
     confRE,confCl,cond=c1.getConfigs()
     if (confRE==0 or confCl==0 or cond==0):
-        print("Неуспешно")
+        print("Ошибка загрузки конфигурации")
         exit()
     print("Успешно")
     printd2("conditions:",cond)
@@ -71,10 +71,9 @@ def main():
     # print(*result)
     notif1=NotifySender(confRE,confCl,cond,result)
     print("Проверка условий")
-    print("Отправка ообщений")
+    print("Отправка cобщений")
     notif1.checkConditions(cond)
     
-    # print(notif1.lasterr())
 
 # Заглушка для класса
 class ErrorСauseChecker:
@@ -227,7 +226,6 @@ class SearchEngine:
         while True:
             line=self.inp1.nextLine()
             if not line:
-                print("TESTNONE")
                 break
             #Save LINESNUMBER lines before error
             nrstrings.append(line)
@@ -248,7 +246,6 @@ class SearchEngine:
                             printd2("match:", match)
                             #Get next 5 lines
                             position = self.inp1.getPos()
-                            print("TEST POSITION1", self.inp1.getPos())
                             nstrings=list()
                             for i in range(LINESNUMBER):
                                 line=self.inp1.nextLine()
@@ -256,13 +253,9 @@ class SearchEngine:
                                     nstrings.append("")
                                 else:
                                     nstrings.append(line)
-                            print("TEST POSITION1.5", self.inp1.getPos())
                             self.inp1.setPos(position)
                             
-                            print("TEST POSITION2", self.inp1.getPos())
-                                    
                             result.append({"string":str1,"class":regex["regexlist"][j]["class"],"match":match,"nrstrings":nrstrings,"nstrings":nstrings})
-                            print("TEST\n",result[-1])
                             break
         printd("\nПоиск завершен за",time.time() - start_time, "секунд"," \nКоличество строк в файле:",self.inp1.strnum)
         return result
@@ -307,7 +300,6 @@ class InputManager:
             self.strnum+=1
             if not self.line:
                 flagEOF=1
-                print("TESTEOFNONE")
                 return None
                 break
             return self.line
