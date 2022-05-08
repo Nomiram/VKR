@@ -3,7 +3,7 @@
 # Project Name : Parsing & analysing log files
 # Author       : nomiram 
 # Created      : 22.11.2021 
-# Last Modified: 28.11.2021 
+# Last Modified: 10.05.2021 
 # Description  : This program parse logfile from obs and send notifications to developers
 # Requirements : regex.json, classifier.json in directory of program
 # Requirements : 
@@ -14,8 +14,11 @@ import time
 import argparse
 import json
 import requests 
+import traceback 
 import shutil
 from jira import JIRA
+
+
 
 '''
 TODO
@@ -33,10 +36,13 @@ def printd(*args, **kwargs):
 # Главная функция
 def main():
     global DEBUG
+    global LINESNUMBER
     DEBUG=1
+    LINESNUMBER = 5
     parser = argparse.ArgumentParser(description='Прототип системы анализа и классификации журналов при сборках')
     parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора")
     parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
+    parser.add_argument("--pargs",default="", help="Путь к файлу с дополнительными аргументами")
     parser.add_argument("--debug",default=0, nargs='?', const=1, help="Включает режим DEBUG")
     args = parser.parse_args()
     if not DEBUG: DEBUG=int(args.debug)
@@ -51,7 +57,7 @@ def main():
     printd2("conditions:",cond)
     printd2("regex:",confRE)
     printd2("cl:",confCl)
-    test=c1.JSONload("classifier.json")
+    test=InputManager.JSONload("classifier.json")
     # printd2("conditions json:",test["conditions"])
     if(isinstance(args.file, str)):
         srch1=SearchEngine(confRE,confCl,args.file,args.fileurl)
@@ -100,7 +106,7 @@ class NotifySender:
     def cntErrClass(self,num):
         return [int(self.strlist[i]["class"]) for i in range(len(self.strlist))].count(int(num))
         
-    def replaceKeywords(self,mainstr,str1={"string":"","class":""},type=1):
+    def replaceKeywords(self,mainstr,str1={"string":"","class":"","nstrings":"","nrstrings":""},type=1):
         mainstr=mainstr.replace("$lasterr",str(self.lasterr()["string"]))
         mainstr=mainstr.replace("$firsterr",str(self.firsterr()["string"]))
         mainstr=mainstr.replace("$txterr",str(str1["string"]))
@@ -114,36 +120,41 @@ class NotifySender:
         res=re.findall(r"\$numerr\[(-*\d)]",mainstr)
         for i in res:
             mainstr=re.sub(r"\$numerr\[-*{0}]".format(int(i)), str(self.cntErrClass(i)), mainstr)  
-        # res=re.findall(r"\$Class\[(-*\d)]",mainstr)
-        # for i in res:
-            # mainstr=re.sub(r"\$Class\[-*{0}]".format(int(i)), str([int(self.cond[i][0]) for i in range(len(self.strlist))].count(int(num))), mainstr)  
+        
+        res=re.findall(r"\$nextnstr\[(-*\d)]",mainstr)
+        for i in res:
+            mainstr=re.sub(r"\$nextnstr\[-*{0}]".format(int(i)), str([str1["nstrings"][j] for j in range(int(i))]), mainstr)  
         
         return mainstr
     
-    def logPrintSet(self,i,cond):
+    def logPrintSet(self,i,cond,mainstr):
         # print(cond[i][1][-1])
         if(cond[i]["option"]=="full"):
-            mainstr=self.setErrStr(self.strlist)
-            print(mainstr)
+            mainstr+=self.setErrStr(self.strlist)
         if(cond[i]["option"]=="lasterr"):
-            mainstr=self.setErrStr([self.lasterr()])
-            print(mainstr)
+            mainstr+=self.setErrStr([self.lasterr()])
         if(cond[i]["option"]=="firsterr"):
-            mainstr=self.setErrStr([self.firsterr()])
+            mainstr+=self.setErrStr([self.firsterr()])
+
+        if(cond[i]['type'].lower() == "console"):
             print(mainstr)
-        if(cond[i]["option"]=="none"):
-            print("\n")
+        #if(cond[i]["option"]=="none"):
+        #    print("\n")
         #Send message to Jira
         if(cond[i]['type'].lower() == "jira"):
             
             login="qwerty.mironenko@gmail.com"
-            api_key="EGz9ScrBGMCSpqBLILgY7549"
+            api_key=InputManager.JSONload("jira_api_key.json")
+            if api_key == 0:
+                print("unable to read file 'jira_api_key.json'")
+                exit()
             jira_options = {'server': 'https://nomiram.atlassian.net'}
             jira = JIRA(options=jira_options, basic_auth=(login, api_key))
             issue_key="JPAT-1"
             issue = jira.issue(issue_key)
             print(issue)
             project_key = "JPAT"
+            
             jql = 'project = ' + project_key
             issues_list = jira.search_issues(jql)
             print(issues_list)
@@ -159,24 +170,30 @@ class NotifySender:
         for i in range(len(cond)):
             result1 = re.split(' +', cond[i]["condition"])
             if len(result1)==1:
+                if cond[i]["condition"].lower() == "true":
+                    printd2("True condition")
+                    mainstr=(self.replaceKeywords(cond[i]["pstring"]).replace(r"\n","\n"))
+                    self.logPrintSet(i,cond,mainstr)
+                    return
                 if int(cond[i]["condition"]) in [self.strlist[i][1] for i in range(len(self.strlist))]:
                     printd(f'find error class {cond[i]["condition"]} in errorlist')
                     printd2(self.replaceKeywords(cond[i]["pstring"][1]).replace(r"\n","\n"))
                     # printd(cond[i][1])
                     self.logPrintSet(i,cond)
+
             if len(result1)>1:
                 cnt=int(self.replaceKeywords(result1[0]))
                 if result1[1] == '>' and cnt > int(result1[2]): 
                     printd2(cnt,">",result1[2])
-                    print(self.replaceKeywords(cond[i]["pstring"][1]).replace(r"\n","\n"))
-                    mainstr=self.setErrStr(self.strlist)
-                    self.logPrintSet(i,cond)
+                    mainstr=(self.replaceKeywords(cond[i]["pstring"]).replace(r"\n","\n"))
+                    #mainstr+=self.setErrStr(self.strlist)
+                    self.logPrintSet(i,cond,mainstr)
                 
                 if result1[1] == '<' and cnt < int(result1[2]): 
                     printd2(cnt,"<",result1[2])
-                    print(self.replaceKeywords(cond[i]["pstring"][1]).replace(r"\n","\n"))
-                    mainstr=self.setErrStr(self.strlist)
-                    self.logPrintSet(i,cond)
+                    mainstr=(self.replaceKeywords(cond[i]["pstring"]).replace(r"\n","\n"))
+                    #mainstr+=self.setErrStr(self.strlist)
+                    self.logPrintSet(i,cond,mainstr)
                 
     def setErrStr(self,stringlist,type='console',id=''):
         mainstr=""
@@ -202,24 +219,48 @@ class SearchEngine:
         
     def startFind(self):
         start_time = time.time()
+        nrstrings=list()
         result=list()
         self.inp1.openFile(self.logfile)
         while True:
-            fl,line=self.inp1.nextLine()
-            if fl:
+            line=self.inp1.nextLine()
+            if not line:
+                print("TESTNONE")
                 break
+            #Save LINESNUMBER lines before error
+            nrstrings.append(line)
+            if len(nrstrings)>(LINESNUMBER):
+                nrstrings.pop(0)
             for regex in self.confRE:
+                if line is None: break
                 if regex["keystr"] in line:
                     printd2("\nfline:",re.findall(r"^\[ *\d*s] (.*)",line)[0])
                     for j in range(0,len(regex["regexlist"])):
-                        str1=re.findall(r"^\[ *\d*s] (.*)",line)[0].rstrip("\n") # строка без начального " [****] " и конечного "\n"
+                        #str1=re.findall(r"^\[ *\d*s] (.*)",line)[0].rstrip("\n") # строка без начального " [****] " и конечного "\n"
+                        str1=line.rstrip("\n") # строка без конечного "\n"
+                        #str1=line
                         match=re.findall(regex["regexlist"][j]["regex"],str1)
                         if match:
                             printd2("\nline: ", str1)
                             printd2("regex:", regex["regexlist"][j]["regex"])
                             printd2("match:", match)
-                            result.append({"string":str1,"class":regex["regexlist"][j]["class"],"match":match})
+                            #Get next 5 lines
+                            position = self.inp1.getPos()
+                            print("TEST POSITION1", self.inp1.getPos())
+                            nstrings=list()
+                            for i in range(LINESNUMBER):
+                                line=self.inp1.nextLine()
+                                if line is None:
+                                    nstrings.append("")
+                                else:
+                                    nstrings.append(line)
+                            print("TEST POSITION1.5", self.inp1.getPos())
+                            self.inp1.setPos(position)
                             
+                            print("TEST POSITION2", self.inp1.getPos())
+                                    
+                            result.append({"string":str1,"class":regex["regexlist"][j]["class"],"match":match,"nrstrings":nrstrings,"nstrings":nstrings})
+                            print("TEST\n",result[-1])
                             break
         printd("\nПоиск завершен за",time.time() - start_time, "секунд"," \nКоличество строк в файле:",self.inp1.strnum)
         return result
@@ -258,26 +299,33 @@ class InputManager:
         flagEOF=0
         if not self.file1:
             print("ERROR: No file opend")
-            return 0,""
+            return None
         while True:
             self.line = self.file1.readline()
             self.strnum+=1
             if not self.line:
                 flagEOF=1
-                return flagEOF, ""
+                print("TESTEOFNONE")
+                return None
                 break
-            return flagEOF, self.line
+            return self.line
     
     def getPos(self):
-        return file1.tell()
+        return self.file1.tell()
     
-    def setPos(self):
-        file1.seek(pos)
-    def JSONload(self,filename):
-        with open(filename, "r") as read_file:
-            data = json.load(read_file)
-            # print(data)
-        return data
+    def setPos(self,pos):
+        self.file1.seek(pos)
+    @staticmethod
+    def JSONload(filename):
+        try:
+            with open(filename, "r") as read_file:
+                data = json.load(read_file)
+            return data
+        except Exception as err:
+            print(err)
+            return 0
+        # print(data)
+    
     def getConfigs(self):
         configArr1=list()
         currArr=-1
@@ -292,70 +340,6 @@ class InputManager:
                 # print(data)
                 if configArr2:
                     return configArr1,configArr2["classes"],configArr2["conditions"]
-        conf1=InputManager()
-        conf1.openFile("regex.config")
-        fl,line = conf1.nextLine()
-        if fl:
-            return 0
-        result = re.split(r' ', line)
-        delimiter=result[0]
-        comm=result[1]
-        if not delimiter:
-            exit()
-        while True:
-            fl,line=conf1.nextLine()
-            if fl:
-                break
-            if line[0]==comm:
-                continue
-            result = re.split(delimiter, line)
-            # print(result)
-            if re.match(r'\s', result[0]):
-                currArr=currArr+1
-                configArr1.append([])
-                configArr1[currArr].append(result[1])
-            else:
-                configArr1[currArr].append([result[1],int(result[2])])
-        
-
-        
-        conditional=list()
-        conf1.openFile("classifier.config")
-        configArr2=list()
-        conditional=list()
-        cnt=-1
-        while True:
-            fl,line=conf1.nextLine()
-            if fl:
-                break
-            if line[0]=="\n":
-                continue
-            while line[0:2]=="if":
-                cnt+=1
-                conditional.append([line[3:-2]])
-                fl,line=conf1.nextLine()
-                if fl:
-                    break
-                while line[0] == "\t":
-                    result1 = re.split('#', line[1:-1])
-                    conditional[cnt].append(result1)
-                    fl,line=conf1.nextLine()
-                    if fl:
-                        break
-                    # conditional[cnt].append(line)
-                    
-            
-            result1 = re.split('#', line)
-            fl,line2=conf1.nextLine()
-            if fl:
-                break
-            try:
-                configArr2.append([[int(result1[0]),result1[1],result1[2],result1[3]],line2])
-            except Exception:
-                print("\nUnable to parse around:\n",line)
-                return 0,0,0
-        # printd(configArr2)
-        return configArr1,configArr2,conditional
 
 if __name__ == "__main__":
     main()

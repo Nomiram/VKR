@@ -6,7 +6,7 @@
 	"type":"console",
 	"id":"",
 	"option":"full",
-	"text":"Unit $name\n is falen"
+	"text":"Unit $name\n is falen $nextnstr[3]"
 },
 {
 	"class":1,
@@ -34,22 +34,21 @@
 "conditions":
 [
 {
-	"condition":"1 > 0",
-	"type":"jira",
+	"condition":"True",
+	"type":"console",
 	"option":"full",
 	"login":"qwerty.mironenko@gmail.com",
-	"api_key":"EGz9ScrBGMCSpqBLILgY7549",
-	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
+	"pstring":"ERRORS: $numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0] $errtxt[-1]"
 },
 {
-	"condition":"$numerr[4] > 0",
+	"condition":"$numerr[4] < 0",
 	"type":"console",
 	"option":"lasterr",
 	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
 },
 {
-	"condition":"$numerr[5] > 0",
-	"type":"Jira",
+	"condition":"$numerr[5] < 0",
+	"type":"console",
 	"option":"lasterr",
 	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n $errprm[1][0]"
 }
