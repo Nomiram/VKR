@@ -1,35 +1,26 @@
 [
 {
-   "keystr": "Error: ",
-   "regexlist": 
-   [
-   {"regex":"Error: system error:(\\w*)","class":2},
-   {"regex":"Error:(\\w*)","class":2},
-   {"regex":"Error:(.*)","class":0}
-   ]
-},
-{
    "keystr": "error: ",
    "regexlist": 
    [
-   {"regex":"^error:(.*)","class":0},
-   {"regex":"^error:(.*)","class":3}
+   {"regex":"^error:(.*)","class":1},
+   {"regex":"^error:(.*)","class":1},
+   {"regex":"error:(.*) was not declared in this scope","class":2}
    ]	
 },
 {
    "keystr": "failed ",
    "regexlist": 
    [
-   {"regex":"(.*) failed (.*) at (.*)","class":0},
-   {"regex":"^error:(.*)","class":3}
+   {"regex":"(.*) failed (.*) at (.*)","class":0}
    ]	
 },
 {
    "keystr": " Error ",
    "regexlist": 
    [
-   {"regex":"make\\[.*]: .* \\[.*] Error (\\d*)","class":4},
-   {"regex":"^error:(.*)","class":3}
+   {"regex":"make\\[.*]: .* \\[.*] Error (\\d*)","class":1},
+   {"regex":"^error:(.*)","class":1}
    ]	
 }
 ]

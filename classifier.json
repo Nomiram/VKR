@@ -1,34 +1,14 @@
 {
 "classes":[
 {
-	"class":0,
-	"name":"0",
-	"type":"console",
-	"id":"",
-	"option":"full",
-	"text":"Unit $name\n is falen\n $nextnstr[3]"
-},
-{
 	"class":1,
-	"type":"jira",
-	"id":"",
-	"login":"qwerty.mironenko@gmail.com",
-	"option":"id",
-	"text":"$id was falen"
+	"option":"full",
+	"text":"$txterr"
 },
 {
 	"class":2,
-	"type":"console",
-	"id":"",
-	"option":"id",
-	"text":""
-},
-{
-	"class":4,
-	"type":"console",
-	"id":"",
 	"option":"full",
-	"text":"error $curerr: \n$txterr \n$nextnstr[3]"
+	"text":"sintax error: \n$txterr \n$nextnstr[2]\n"
 }
 ],
 "conditions":
@@ -37,21 +17,15 @@
 	"condition":"True",
 	"type":"Jira",
 	"option":"full",
-	"login":"qwerty.mironenko@gmail.com",
 	"project_key":"JPAT",
-	"pstring":"ERRORS: $numerr[0]: all $errcnt last error: \n$lasterr\n$errprm[1][0]\n$errtxt[-1]"
+	"pstring":"$numerr[2] sintax errors: $classerrtxt[2]\nALLERRORS:\n"
 },
 {
-	"condition":"$numerr[4] < 0",
-	"type":"console",
-	"option":"lasterr",
-	"pstring":"$numerr[0]: all $errcnt last error: \n$lasterr\n$errprm[1][0]"
-},
-{
-	"condition":"$numerr[5] < 0",
-	"type":"console",
-	"option":"lasterr",
-	"pstring":"$numerr[0]: all $errcnt last error:\n$lasterr\n$errprm[1][0]"
+	"condition":"True",
+	"type":"Jira",
+	"option":"full",
+	"project_key":"JPAT",
+	"pstring":"ERRORS: \n$errtxt[-1]\n"
 }
 ]
 }

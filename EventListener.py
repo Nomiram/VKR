@@ -68,8 +68,9 @@ def callback(ch, method, properties, body):
         bodyargs=json.loads(body)
         #bodyargs=body
         #print(bodyargs)
-        filename=bodyargs['project']+"."+bodyargs['repository']+"."+bodyargs['arch']+"."+bodyargs['package'],".json"
-        json.dump(body,filename)
+        filename=bodyargs['project']+"."+bodyargs['repository']+"."+bodyargs['arch']+"."+bodyargs['package']+".json"
+        with open(str(filename), 'w') as fp:
+            json.dump(bodyargs,fp)
         pipe1=Popen(["python3", program_name, "--fileurl", "http://localhost:3000/public/build/"+bodyargs['project']+"/"+bodyargs['repository']+"/"+bodyargs['arch']+"/"+bodyargs['package']+"/_log"],"--pargs",filename, stdout=PIPE)
         #pipe1=Popen(["python3", program_name, "--file", "./_log.txt"], stdout=PIPE)
         print("subprocess answer\n",(pipe1.stdout.read()).decode("utf-8"))

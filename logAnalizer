@@ -15,7 +15,6 @@ import argparse
 import json
 import requests 
 import traceback 
-import traceback 
 import shutil
 from jira import JIRA
 from datetime import datetime
@@ -38,9 +37,11 @@ def printd(*args, **kwargs):
 # Главная функция
 def main():
     global DEBUG
+    global DELIMETR
     global LINESNUMBER
     DEBUG=1
     LINESNUMBER = 5
+    DELIMETR = "====\n"
     parser = argparse.ArgumentParser(description='Прототип системы анализа и классификации журналов при сборках')
     parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора")
     parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
@@ -116,15 +117,26 @@ class NotifySender:
         mainstr=mainstr.replace("$firsterr",str(self.firsterr()["string"]))
         mainstr=mainstr.replace("$txterr",str(str1["string"]))
         mainstr=mainstr.replace("$curerr",str(str1["class"]))
+        
         res=re.findall(r"\$errtxt\[(-*\d)]",mainstr)
         for i in res:
             mainstr=re.sub(r"\$errtxt\[-*{0}]".format(int(i)), str(self.strlist[int(i)]["string"]), mainstr)  
+        
         res=re.findall(r"\$errtxt\[all]",mainstr)
         mainstr=re.sub(r"\$errtxt\[all]", "".join(["".join([str(i["string"]),"\n"]) for i in self.strlist]), mainstr)  
         mainstr=mainstr.replace("$errcnt",str(len(self.strlist)))
+        
         res=re.findall(r"\$numerr\[(-*\d)]",mainstr)
         for i in res:
             mainstr=re.sub(r"\$numerr\[-*{0}]".format(int(i)), str(self.cntErrClass(i)), mainstr)  
+        
+        res=re.findall(r"\$classerrtxt\[(-*\d)]",mainstr)
+        akkumstr=""
+        for i in res:
+            for errstring in self.strlist:
+                if errstring["class"] == int(i):
+                    akkumstr+=errstring["string"]
+            mainstr=re.sub(r"\$classerrtxt\[-*{0}]".format(int(i)), akkumstr, mainstr)  
 
         res=re.findall(r"\$nextnstr\[(-*\d)]",mainstr)
         for i in res:
@@ -176,6 +188,7 @@ class NotifySender:
             new_issue = jira.create_issue(fields=issue_dict)
         
     def checkConditions(self,cond):
+        printd2("NUMBEROF CONDITIONS: ",len(cond))
         for i in range(len(cond)):
             result1 = re.split(' +', cond[i]["condition"])
             if len(result1)==1:
@@ -183,7 +196,7 @@ class NotifySender:
                     printd2("True condition")
                     mainstr=(self.replaceKeywords(cond[i]["pstring"]).replace(r"\n","\n"))
                     self.logPrintSet(i,cond,mainstr)
-                    return
+                    continue
                 if int(cond[i]["condition"]) in [self.strlist[i][1] for i in range(len(self.strlist))]:
                     printd(f'find error class {cond[i]["condition"]} in errorlist')
                     printd2(self.replaceKeywords(cond[i]["pstring"][1]).replace(r"\n","\n"))
@@ -215,6 +228,7 @@ class NotifySender:
                         mainstr+=self.replaceKeywords(config["text"],str1)+"\n";
                     else:
                         mainstr+=self.replaceKeywords("\n$txterr",str1)+"\n";
+                    mainstr+=DELIMETR;
         return mainstr
 
 class SearchEngine:
@@ -318,6 +332,7 @@ class InputManager:
     
     def setPos(self,pos):
         self.file1.seek(pos)
+        
     @staticmethod
     def JSONload(filename):
         try:
@@ -332,16 +347,28 @@ class InputManager:
     def getConfigs(self):
         configArr1=list()
         currArr=-1
-        
-        # Ввод regex.config
-        with open("regex.json", "r") as read_file:
-            configArr1 = json.load(read_file)
-            if configArr1:
-                        # Ввод classifier.config
-                with open("classifier.json", "r") as read_file:
-                    configArr2 = json.load(read_file)
+        try:
+            # Ввод regex
+            with open("regex.json", "r") as read_file:
+                configArr1 = json.load(read_file)
+        except Exception as err:
+            error_handler("Ошибка чтения файла конфигурации 'regex.json': ",err)
+        try:
+            # Ввод classifier
+            with open("classifier.json", "r") as read_file:
+                configArr2 = json.load(read_file)
                 # print(data)
-                if configArr2:
+                if configArr1 and configArr2:
                     return configArr1,configArr2["classes"],configArr2["conditions"]
+        except Exception as err:
+            error_handler("Ошибка чтения файла конфигурации 'classifier.json': ",err)
+            
+def error_handler(errstr,err):
+    print("Ошибка. Подробно:")
+    print(errstr)
+    print(err)
+    printd(traceback.format_exc())
+    print("Выполнение программы ",__file__," прервано")
+    exit()
 if __name__ == "__main__":
     main()
