@@ -56,6 +56,9 @@ def main():
     if (confRE==0 or confCl==0 or cond==0):
         print("Ошибка загрузки конфигурации")
         exit()
+    
+    pargs = InputManager.JSONload(args.pargs)
+    
     print("Успешно")
     printd2("conditions:",cond)
     printd2("regex:",confRE)
@@ -70,7 +73,7 @@ def main():
     printd2("Поиск:")
     result=srch1.startFind()
     # print(*result)
-    notif1=NotifySender(confRE,confCl,cond,result)
+    notif1=NotifySender(confRE,confCl,cond,pargs,result)
     print("Проверка условий,")
     print("Отправка cобщений........",end="")
     notif1.checkConditions(cond)
@@ -89,12 +92,13 @@ class ErrorСauseChecker:
         
 class NotifySender:
     """Класс предназначен для уведомления о провалившейся сборке"""
-    def __init__(self,confRE,confCl,cond,strlist,file=""):
+    def __init__(self,confRE,confCl,cond,pargs,strlist,file=""):
         self.confRE,self.confCl=confRE,confCl
         self.inp1=InputManager()
         self.logfile=self.inp1.getLogfile(file) 
         self.strlist=strlist
         self.cond=cond
+        self.pargs=pargs
         
     def lasterr(self):
         try:
@@ -159,9 +163,6 @@ class NotifySender:
         #    print("\n")
         #Send message to Jira
         if(cond[i]['type'].lower() == "jira"):
-            
-            
-            
             login, api_key=InputManager.JSONload("jira_api_key.json")
             if api_key == 0:
                 print("unable to read file 'jira_api_key.json'")
@@ -179,9 +180,13 @@ class NotifySender:
             jql = 'project = ' + project_key
             issues_list = jira.search_issues(jql)
             #print(issues_list)
+            if self.pargs != "":
+                summary = str(self.pargs["project"]+"."+self.pargs["package"]+"build failed")
+            else:
+                summary = 'New issue from program.py'
             issue_dict = {
                 'project': project_key,
-                'summary': 'New issue from program.py',
+                'summary': summary,
                 'description': mainstr,
                 'issuetype': {'name': 'Task'},
             }

@@ -8,7 +8,7 @@ import json
 import re
 #magic constants (TODO put it into startup.config)
 amqp_namespace = "opensuse.obs";
-program_name="./program.py"
+program_name="./logAnalizer"
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
@@ -21,7 +21,7 @@ binding_keys = "#"
 if not binding_keys:
     sys.stderr.write("Usage: %s [binding_key]...\n" % sys.argv[0])
     sys.exit(1)
-	
+    
 for i in range(len(binding_keys)):
     channel.queue_bind(
         exchange='pubsub', queue=queue_name, routing_key=binding_keys)
@@ -68,10 +68,11 @@ def callback(ch, method, properties, body):
         bodyargs=json.loads(body)
         #bodyargs=body
         #print(bodyargs)
-        filename=bodyargs['project']+"."+bodyargs['repository']+"."+bodyargs['arch']+"."+bodyargs['package']+".json"
+        filename=bodyargs['project']+"."+bodyargs['repository']+"."+bodyargs['arch']+"."+bodyargs['package']+datetime.now().strftime("-%H-%M-%S")+".json"
         with open(str(filename), 'w') as fp:
             json.dump(bodyargs,fp)
-        pipe1=Popen(["python3", program_name, "--fileurl", "http://localhost:3000/public/build/"+bodyargs['project']+"/"+bodyargs['repository']+"/"+bodyargs['arch']+"/"+bodyargs['package']+"/_log"],"--pargs",filename, stdout=PIPE)
+            fp.close()
+        pipe1=Popen(["python3", program_name, "--fileurl", "http://localhost:3000/public/build/"+bodyargs['project']+"/"+bodyargs['repository']+"/"+bodyargs['arch']+"/"+bodyargs['package']+"/_log","--pargs",filename], stdout=PIPE)
         #pipe1=Popen(["python3", program_name, "--file", "./_log.txt"], stdout=PIPE)
         print("subprocess answer\n",(pipe1.stdout.read()).decode("utf-8"))
     
