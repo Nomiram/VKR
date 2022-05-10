@@ -6,9 +6,11 @@ from subprocess import PIPE
 from datetime import datetime
 import json
 import re
+from jira import JIRA
 #magic constants (TODO put it into startup.config)
 amqp_namespace = "opensuse.obs";
-program_name="./logAnalizer"
+program_name = "./logAnalizer"
+JIRAOPTIONSFILENAME = "jira_api_key.json"
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
@@ -29,12 +31,14 @@ for i in range(len(binding_keys)):
 
 print(datetime.now().strftime("%H:%M:%S"),' [*] Waiting for logs. To exit press CTRL+C')
 
-def JiraNotifySender(project_key,message):
-    login, api_key=json.load("jira_api_key.json")
+def JiraNotifySender(project_key,summary,message):
+    with open(str(JIRAOPTIONSFILENAME), 'r') as fp:
+        server, login, api_key=json.load(fp)
+        fp.close()
     if not api_key:
         print("unable to read file 'jira_api_key.json'")
         exit()
-    jira_options = {'server': 'https://nomiram.atlassian.net'}
+    jira_options = {'server': server}
     jira = JIRA(options=jira_options, basic_auth=(login, api_key))
     issue_key="JPAT-1"
     issue = jira.issue(issue_key)
@@ -49,19 +53,22 @@ def JiraNotifySender(project_key,message):
     #print(issues_list)
     issue_dict = {
         'project': project_key,
-        'summary': 'New issue from program.py',
+        'summary': summary,
         'description': message,
-        'issuetype': {'name': 'Task'},
+        'issuetype': {'name': 'Task'}
     }
     new_issue = jira.create_issue(fields=issue_dict)
 def callback(ch, method, properties, body):
     #bodyargs=json.loads(body.decode("utf-8"))
     print(datetime.now().strftime("%H:%M:%S"),"[x] %r:%r" % (method.routing_key, body))
+    #Detecting down workers
     if method.routing_key == amqp_namespace+".metrics":
         #print("starting subprocess...") 
         
         if ("worker" in str(body)) and ("state=down" in str(body)):
-            JiraNotifySender("DEV","worker is down\n metrics:"+body)
+            print("Worker is down. Send notification...")
+            JiraNotifySender("DEVOPS",'Local OBS instance error',"Local OBS instance error: Worker is down\n metrics: "+str(body))
+    # Detecting and analizing failed packages
     if method.routing_key == amqp_namespace+".package.build_fail":
         print("starting subprocess...") 
         

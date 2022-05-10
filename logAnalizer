@@ -39,9 +39,11 @@ def main():
     global DEBUG
     global DELIMETR
     global LINESNUMBER
-    DEBUG=1
+    global JIRAOPTIONSFILENAME
+    DEBUG=0
     LINESNUMBER = 5
     DELIMETR = "====\n"
+    JIRAOPTIONSFILENAME = "jira_api_key.json"
     parser = argparse.ArgumentParser(description='Прототип системы анализа и классификации журналов при сборках')
     parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора")
     parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
@@ -148,6 +150,32 @@ class NotifySender:
 
         return mainstr
     
+    def JiraNotifySender(self,project_key,summary,message):
+        server, login, api_key=InputManager.JSONload(JIRAOPTIONSFILENAME)
+        if not api_key:
+            print("unable to read file 'jira_api_key.json'")
+            exit()
+        jira_options = {'server': server}
+        jira = JIRA(options=jira_options, basic_auth=(login, api_key))
+        issue_key="JPAT-1"
+        issue = jira.issue(issue_key)
+        #print(issue)
+        try:
+            project_key 
+        except Exception:
+            print("error: project_key not found ")
+            return
+        jql = 'project = ' + project_key
+        issues_list = jira.search_issues(jql)
+        #print(issues_list)
+        issue_dict = {
+            'project': project_key,
+            'summary': summary,
+            'description': message,
+            'issuetype': {'name': 'Task'}
+        }
+        new_issue = jira.create_issue(fields=issue_dict)
+    
     def logPrintSet(self,i,cond,mainstr):
         # print(cond[i][1][-1])
         if(cond[i]["option"]=="full"):
@@ -163,34 +191,21 @@ class NotifySender:
         #    print("\n")
         #Send message to Jira
         if(cond[i]['type'].lower() == "jira"):
-            login, api_key=InputManager.JSONload("jira_api_key.json")
-            if api_key == 0:
-                print("unable to read file 'jira_api_key.json'")
-                exit()
-            jira_options = {'server': 'https://nomiram.atlassian.net'}
-            jira = JIRA(options=jira_options, basic_auth=(login, api_key))
-            issue_key="JPAT-1"
-            issue = jira.issue(issue_key)
-            #print(issue)
+
             try:
                 project_key = cond[i]['project_key']
-            except Exception:
-                print("error: project_key not found ")
+            except Exception as err:
+                error_handler("project_key not found: ",err)
                 return
-            jql = 'project = ' + project_key
-            issues_list = jira.search_issues(jql)
-            #print(issues_list)
             if self.pargs != "":
-                summary = str(self.pargs["project"]+"."+self.pargs["package"]+"build failed")
+                summary = str(self.pargs["project"]+"."+self.pargs["package"]+" build failed")
             else:
-                summary = 'New issue from program.py'
-            issue_dict = {
-                'project': project_key,
-                'summary': summary,
-                'description': mainstr,
-                'issuetype': {'name': 'Task'},
-            }
-            new_issue = jira.create_issue(fields=issue_dict)
+                summary = 'New issue from Log Analizer'
+            try:
+                self.JiraNotifySender(project_key, summary, mainstr)
+            except Exception as err:
+                error_handler("Ошибка отправки данных в Jira: ",err)
+
         
     def checkConditions(self,cond):
         printd2("NUMBEROF CONDITIONS: ",len(cond))
@@ -343,6 +358,7 @@ class InputManager:
         try:
             with open(filename, "r") as read_file:
                 data = json.load(read_file)
+                read_file.close()
             return data
         except Exception as err:
             print(err)

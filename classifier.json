@@ -1,31 +1,31 @@
 {
 "classes":[
 {
-	"class":1,
-	"option":"full",
-	"text":"$txterr"
+    "class":1,
+    "option":"full",
+    "text":"$txterr"
 },
 {
-	"class":2,
-	"option":"full",
-	"text":"sintax error: \n$txterr \n$nextnstr[2]\n"
+    "class":2,
+    "option":"full",
+    "text":"sintax error: \n$txterr \n$nextnstr[2]\n"
 }
 ],
 "conditions":
 [
-{
-	"condition":"True",
-	"type":"Jira",
-	"option":"full",
-	"project_key":"JPAT",
-	"pstring":"$numerr[2] sintax errors: $classerrtxt[2]\nALLERRORS:\n"
+{   
+    "condition":"$numerr[2] > 0", 
+    "type":"Jira",
+    "option":"full",
+    "project_key":"DEV1",
+    "pstring":"$numerr[2] sintax errors: $classerrtxt[2]\nALLERRORS:\n"
 },
 {
-	"condition":"True",
-	"type":"Jira",
-	"option":"full",
-	"project_key":"JPAT",
-	"pstring":"ERRORS: \n$errtxt[-1]\n"
+    "condition":"1 < 0",
+    "type":"Jira",
+    "option":"full",
+    "project_key":"DEV1",
+    "pstring":"ERRORS: \n$errtxt[-1]\n"
 }
 ]
 }
