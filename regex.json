@@ -5,15 +5,16 @@
    [
    {"regex":"^error:(.*)","class":1},
    {"regex":"^error:(.*)","class":1},
-   {"regex":"error:(.*) was not declared in this scope","class":2}
-   ]	
+   {"regex":"error:(.*) was not declared in this scope","class":2},
+   {"regex":"error: line (.*): Empty tag:","class":3}
+   ]    
 },
 {
    "keystr": "failed ",
    "regexlist": 
    [
    {"regex":"(.*) failed (.*) at (.*)","class":0}
-   ]	
+   ]    
 },
 {
    "keystr": " Error ",
@@ -21,6 +22,6 @@
    [
    {"regex":"make\\[.*]: .* \\[.*] Error (\\d*)","class":1},
    {"regex":"^error:(.*)","class":1}
-   ]	
+   ]    
 }
 ]

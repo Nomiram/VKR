@@ -9,16 +9,30 @@
     "class":2,
     "option":"full",
     "text":"sintax error: \n$txterr \n$nextnstr[2]\n"
+},
+{
+    "class":3,
+    "option":"full",
+    "text":""
 }
 ],
 "conditions":
 [
 {   
     "condition":"$numerr[2] > 0", 
+    "description":"C++ sintax errors",
     "type":"Jira",
     "option":"full",
     "project_key":"DEV1",
     "pstring":"$numerr[2] sintax errors: $classerrtxt[2]\nALLERRORS:\n"
+},
+{   
+    "condition":"$numerr[3] > 0", 
+    "description":"specification empty tag error",
+    "type":"Jira",
+    "option":"full",
+    "project_key":"DEV1",
+    "pstring":"Specification empty tag error: $classerrtxt[3]\n"
 },
 {
     "condition":"1 < 0",
