@@ -10,6 +10,13 @@
    ]    
 },
 {
+   "keystr": "exceeded",
+   "regexlist": 
+   [
+   {"regex":"Disk quota exceeded","class":4}
+   ]    
+},
+{
    "keystr": "failed ",
    "regexlist": 
    [

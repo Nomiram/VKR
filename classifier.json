@@ -14,6 +14,11 @@
     "class":3,
     "option":"full",
     "text":""
+},
+{
+    "class":4,
+    "option":"full",
+    "text":""
 }
 ],
 "conditions":
@@ -33,6 +38,14 @@
     "option":"full",
     "project_key":"DEV1",
     "pstring":"Specification empty tag error: $classerrtxt[3]\n"
+},
+{   
+    "condition":"$numerr[4] > 0", 
+    "description":"Disk quota exceeded error",
+    "type":"Jira",
+    "option":"full",
+    "project_key":"DEVOPS",
+    "pstring":"Disk quota exceeded: \n$classerrtxt[4]\n"
 },
 {
     "condition":"1 < 0",

@@ -87,4 +87,9 @@ def callback(ch, method, properties, body):
 channel.basic_consume(
     queue=queue_name, on_message_callback=callback, auto_ack=True)
 
-channel.start_consuming()
+try:
+    channel.start_consuming()
+except KeyboardInterrupt:
+    channel.stop_consuming()
+    connection.close()
+    print("Successfully stopped")
