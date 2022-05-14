@@ -24,9 +24,6 @@ from datetime import datetime
 '''
 TODO
 добавить комментарии
-добавить класс Classes
-добавить класс Conditions
-добавить класс Notifications
 '''
 def printd2(*args, **kwargs):
     if DEBUG==2:
@@ -38,11 +35,15 @@ def printd(*args, **kwargs):
 def main():
     global DEBUG
     global DELIMETR
+    global CNTJIRASEND
+    global CNTSEND
     global LINESNUMBER
     global JIRAOPTIONSFILENAME
     DEBUG=0
-    LINESNUMBER = 5
     DELIMETR = "====\n"
+    CNTJIRASEND=0
+    CNTSEND=0
+    LINESNUMBER = 5
     JIRAOPTIONSFILENAME = "jira_api_key.json"
     parser = argparse.ArgumentParser(description='Прототип системы анализа и классификации журналов при сборках')
     parser.add_argument("--file", help="Путь к файлу журнала для разбора")
@@ -82,6 +83,9 @@ def main():
     print("Отправка cобщений........",end="")
     notif1.checkConditions(cond)
     print("Успешно")
+    printd("Отправлено сообщений: ", CNTSEND)
+    printd("Отправлено сообщений в Jira: ", CNTJIRASEND)
+    
     print("Программа ", __file__," завершена")
     
 
@@ -181,11 +185,12 @@ class NotifySender:
 
         if(cond[i]['type'].lower() == "console"):
             print(mainstr)
+            CNTSEND+=1
         #if(cond[i]["option"]=="none"):
         #    print("\n")
         #Send message to Jira
         if(cond[i]['type'].lower() == "jira"):
-
+            
             try:
                 project_key = cond[i]['project_key']
             except Exception as err:
@@ -194,9 +199,11 @@ class NotifySender:
             if self.pargs != "":
                 summary = str(self.pargs["project"]+"."+self.pargs["package"]+" build failed")
             else:
-                summary = 'New issue from Log Analizer'
+                summary = 'New issue from'+str(__file__)
             try:
                 self.JiraNotifySender(project_key, summary, mainstr)
+                CNTJIRASEND+=1
+                CNTSEND+=1
             except Exception as err:
                 error_handler("Ошибка отправки данных в Jira: ",err)
 
@@ -318,9 +325,9 @@ class InputManager:
                 shutil.copyfileobj(r.raw, f) 
         return local_filename
     def getLogfile(self,file="",fileurl=""):
-        if fileurl != "":
+        if fileurl:
             return self.download_file(fileurl)
-        if file != "":
+        if file:
             return file
         #file = os.environ["userprofile"]+r"\Downloads\_log.txt"
         file = r"./_log.txt"
