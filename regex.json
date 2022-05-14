@@ -24,6 +24,13 @@
    ]    
 },
 {
+   "keystr": "undefined reference",
+   "regexlist": 
+   [
+   {"regex":"(.*) undefined reference (.*)","class":5}
+   ]    
+},
+{
    "keystr": " Error ",
    "regexlist": 
    [

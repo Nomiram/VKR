@@ -19,6 +19,11 @@
     "class":4,
     "option":"full",
     "text":""
+},
+{
+    "class":5,
+    "option":"full",
+    "text":""
 }
 ],
 "conditions":
@@ -46,6 +51,14 @@
     "option":"full",
     "project_key":"DEVOPS",
     "pstring":"Disk quota exceeded: \n$classerrtxt[4]\n"
+},
+{   
+    "condition":"$numerr[5] > 0", 
+    "description":"C++ undefined reference",
+    "type":"Jira",
+    "option":"full",
+    "project_key":"DEV1",
+    "pstring":"Undefined reference error: \n$classerrtxt[5]\n All errors:\n"
 },
 {
     "condition":"1 < 0",

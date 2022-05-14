@@ -1,4 +1,4 @@
-﻿#!/usr/bin/python3
+﻿#!/usr/bin/env python3
 # Language     : python 3.7 
 # Project Name : Parsing & analysing log files
 # Author       : nomiram 
@@ -45,9 +45,9 @@ def main():
     DELIMETR = "====\n"
     JIRAOPTIONSFILENAME = "jira_api_key.json"
     parser = argparse.ArgumentParser(description='Прототип системы анализа и классификации журналов при сборках')
-    parser.add_argument("--file",default="", help="Путь к файлу журнала для разбора")
-    parser.add_argument("--fileurl",default="", help="Url  путь к файлу журнала для разбора")
-    parser.add_argument("--pargs",default="", help="Путь к файлу с дополнительными аргументами")
+    parser.add_argument("--file", help="Путь к файлу журнала для разбора")
+    parser.add_argument("--fileurl",help="Url  путь к файлу журнала для разбора")
+    parser.add_argument("--pargs", help="Путь к файлу с дополнительными аргументами")
     parser.add_argument("--debug",default=0, nargs='?', const=1, help="Включает режим DEBUG")
     args = parser.parse_args()
     if not DEBUG: DEBUG=int(args.debug)
@@ -58,19 +58,21 @@ def main():
     if (confRE==0 or confCl==0 or cond==0):
         print("Ошибка загрузки конфигурации")
         exit()
-    
-    pargs = InputManager.JSONload(args.pargs)
-    
+    if args.pargs:
+        pargs = InputManager.JSONload(args.pargs)
+    else:
+        pargs = ""
     print("Успешно")
     printd2("conditions:",cond)
     printd2("regex:",confRE)
     printd2("cl:",confCl)
     test=InputManager.JSONload("classifier.json")
     # printd2("conditions json:",test["conditions"])
-    if(isinstance(args.file, str)):
+    if(args.file or args.fileurl):
         srch1=SearchEngine(confRE,confCl,args.file,args.fileurl)
     else:
-        print("ERROR: --file должен содержать строку")
+        print("Хотя бы один из аргументов '--fileurl','--file' не должен быть пустым")
+        parser.print_help()
         exit()
     printd2("Поиск:")
     result=srch1.startFind()
@@ -82,14 +84,6 @@ def main():
     print("Успешно")
     print("Программа ", __file__," завершена")
     
-
-# Заглушка для класса
-class ErrorСauseChecker:
-    """Класс предназначен для поиска причины ошибки"""
-    def __init__(self,confRE,confCl,strlist,file=""):
-        self.confRE,self.confCl=confRE,confCl
-        self.inp1=InputManager()
-        self.logfile=self.inp1.getLogfile(file,fileurl)
 
         
 class NotifySender:
