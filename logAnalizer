@@ -39,7 +39,7 @@ def main():
     global CNTSEND
     global LINESNUMBER
     global JIRAOPTIONSFILENAME
-    DEBUG=0
+    DEBUG=1
     DELIMETR = "====\n"
     CNTJIRASEND=0
     CNTSEND=0
@@ -70,7 +70,11 @@ def main():
     test=InputManager.JSONload("classifier.json")
     # printd2("conditions json:",test["conditions"])
     if(args.file or args.fileurl):
-        srch1=SearchEngine(confRE,confCl,args.file,args.fileurl)
+        try:
+            srch1=SearchEngine(confRE,confCl,args.file,args.fileurl)
+        except Exception as err:
+            DEBUG = 1
+            error_handler("При поиске возникла ошибка: ",err)
     else:
         print("Хотя бы один из аргументов '--fileurl','--file' не должен быть пустым")
         parser.print_help()
@@ -81,10 +85,17 @@ def main():
     notif1=NotifySender(confRE,confCl,cond,pargs,result)
     print("Проверка условий,")
     print("Отправка cобщений........",end="")
-    notif1.checkConditions(cond)
+    try:
+        notif1.checkConditions(cond)
+    except Exception as err:
+        DEBUG = 1
+        error_handler("При отправке сообщений возникла ошибка: ",err)
     print("Успешно")
     printd("Отправлено сообщений: ", CNTSEND)
     printd("Отправлено сообщений в Jira: ", CNTJIRASEND)
+    if CNTSEND < 1:
+        print("Отправлено сообщений: ", CNTSEND)
+        
     
     print("Программа ", __file__," завершена")
     
@@ -175,6 +186,8 @@ class NotifySender:
         new_issue = jira.create_issue(fields=issue_dict)
     
     def logPrintSet(self,i,cond,mainstr):
+        global CNTSEND
+        global CNTJIRASEND
         # print(cond[i][1][-1])
         if(cond[i]["option"]=="full"):
             mainstr+=self.setErrStr(self.strlist)
@@ -185,7 +198,7 @@ class NotifySender:
 
         if(cond[i]['type'].lower() == "console"):
             print(mainstr)
-            CNTSEND+=1
+            CNTSEND = CNTSEND + 1
         #if(cond[i]["option"]=="none"):
         #    print("\n")
         #Send message to Jira
@@ -209,7 +222,7 @@ class NotifySender:
 
         
     def checkConditions(self,cond):
-        printd2("NUMBEROF CONDITIONS: ",len(cond))
+        printd2("\nNUMBER OF CONDITIONS: ",len(cond))
         for i in range(len(cond)):
             result1 = re.split(' +', cond[i]["condition"])
             if len(result1)==1:
@@ -217,7 +230,10 @@ class NotifySender:
                     printd2("True condition")
                     mainstr=(self.replaceKeywords(cond[i]["pstring"]).replace(r"\n","\n"))
                     self.logPrintSet(i,cond,mainstr)
-                    continue
+                    if 'terminal' in cond[i] and cond[i]['terminal'] == 'yes':
+                        break
+                    else:
+                        continue
                 if int(cond[i]["condition"]) in [self.strlist[i][1] for i in range(len(self.strlist))]:
                     printd(f'find error class {cond[i]["condition"]} in errorlist')
                     printd2(self.replaceKeywords(cond[i]["pstring"][1]).replace(r"\n","\n"))
@@ -237,6 +253,8 @@ class NotifySender:
                     mainstr=(self.replaceKeywords(cond[i]["pstring"]).replace(r"\n","\n"))
                     #mainstr+=self.setErrStr(self.strlist)
                     self.logPrintSet(i,cond,mainstr)
+            if 'terminal' in cond[i] and cond[i]['terminal'] == 'yes':
+                break
                 
     def setErrStr(self,stringlist,type='console',id=''):
         mainstr=""
@@ -292,6 +310,7 @@ class SearchEngine:
                             nstrings=list()
                             for i in range(LINESNUMBER):
                                 line=self.inp1.nextLine()
+                                self.inp1.strnum -=1
                                 if line is None:
                                     nstrings.append("")
                                 else:

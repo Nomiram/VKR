@@ -24,6 +24,11 @@
     "class":5,
     "option":"full",
     "text":""
+},
+{
+    "class":6,
+    "option":"full",
+    "text":""
 }
 ],
 "conditions":
@@ -59,6 +64,14 @@
     "option":"full",
     "project_key":"DEV1",
     "pstring":"Undefined reference error: \n$classerrtxt[5]\n All errors:\n"
+},
+{   
+    "condition":"$numerr[6] > 0", 
+    "description":"TAR errors",
+    "type":"Jira",
+    "option":"full",
+    "project_key":"DEV1",
+    "pstring":"Tar error: \n$classerrtxt[6]\n All errors:\n"
 },
 {
     "condition":"1 < 0",
