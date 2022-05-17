@@ -295,7 +295,7 @@ class SearchEngine:
             for regex in self.confRE:
                 if line is None: break
                 if regex["keystr"] in line:
-                    printd2("\nfline:",re.findall(r"^\[ *\d*s] (.*)",line)[0])
+                    printd2("\nfline:",line)
                     for j in range(0,len(regex["regexlist"])):
                         #str1=re.findall(r"^\[ *\d*s] (.*)",line)[0].rstrip("\n") # строка без начального " [****] " и конечного "\n"
                         str1=line.rstrip("\n") # строка без конечного "\n"
@@ -390,13 +390,13 @@ class InputManager:
         currArr=-1
         try:
             # Ввод regex
-            with open("regex.json", "r") as read_file:
+            with open("regex3.json", "r") as read_file:
                 configArr1 = json.load(read_file)
         except Exception as err:
             error_handler("Ошибка чтения файла конфигурации 'regex.json': ",err)
         try:
             # Ввод classifier
-            with open("classifier.json", "r") as read_file:
+            with open("classifier4.json", "r") as read_file:
                 configArr2 = json.load(read_file)
                 # print(data)
                 if configArr1 and configArr2:

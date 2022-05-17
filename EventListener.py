@@ -1,4 +1,12 @@
 #!/usr/bin/python3
+# Language     : python 3.7 
+# Project Name : Parsing & analysing log files
+# Author       : nomiram 
+# Created      : 22.11.2021 
+# Last Modified: 10.05.2021 
+# Description  : This program listen the RabbitMQ and call the logAnalizer program
+# Requirements : jira_api_key.json in directory of program
+# Requirements : 
 import pika
 import sys
 from subprocess import Popen
